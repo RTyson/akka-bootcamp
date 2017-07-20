@@ -11,37 +11,34 @@ namespace WinTail
         static void Main(string[] args)
         {
             // initialize MyActorSystem
-            // YOU NEED TO FILL IN HERE
-
-            PrintInstructions();
+            MyActorSystem = ActorSystem.Create("MyActorSystem"); //<<-- 1.1
 
             // time to make your first actors!
-            //YOU NEED TO FILL IN HERE
-            // make consoleWriterActor using these props: Props.Create(() => new ConsoleWriterActor())
-            // make consoleReaderActor using these props: Props.Create(() => new ConsoleReaderActor(consoleWriterActor))
+            
+            // These are top level actors:
+            // i.e. /user/consoleWriterActor
 
+            // make consoleWriterActor using these props: Props.Create(() => new ConsoleWriterActor())
+            Props consoleWriterProps = Props.Create<ConsoleWriterActor>(); //<-- Generic syntax
+            IActorRef consoleWriterActor = MyActorSystem.ActorOf(consoleWriterProps, "consoleWriterActor");
+
+            // make a TailCoordinator actor...
+            Props tailCoordinatorProps = Props.Create(() => new TailCoordinatorActor());
+            IActorRef tailCoordinatorActor = MyActorSystem.ActorOf(tailCoordinatorProps, "tailCoordinatorActor");
+
+            // make validationActor using these props: Props.Create(() => new ValidationActor())
+            Props fileValidationActorProps = Props.Create(() => new FileValidationActor(consoleWriterActor)); //<-- Lambda syntax
+            IActorRef validationActor = MyActorSystem.ActorOf(fileValidationActorProps, "validationActor");
+
+            // make consoleReaderActor using these props: Props.Create(() => new ConsoleReaderActor(consoleWriterActor))
+            Props consoleReaderProps = Props.Create(() => new ConsoleReaderActor());
+            IActorRef consoleReaderActor = MyActorSystem.ActorOf(consoleReaderProps, "consoleReaderActor");
 
             // tell console reader to begin
-            //YOU NEED TO FILL IN HERE
+            consoleReaderActor.Tell(ConsoleReaderActor.StartCommand); //<<-- 1.2
 
             // blocks the main thread from exiting until the actor system is shut down
             MyActorSystem.WhenTerminated.Wait();
-        }
-
-        private static void PrintInstructions()
-        {
-            Console.WriteLine("Write whatever you want into the console!");
-            Console.Write("Some lines will appear as");
-            Console.ForegroundColor = ConsoleColor.DarkRed;
-            Console.Write(" red ");
-            Console.ResetColor();
-            Console.Write(" and others will appear as");
-            Console.ForegroundColor = ConsoleColor.Green;
-            Console.Write(" green! ");
-            Console.ResetColor();
-            Console.WriteLine();
-            Console.WriteLine();
-            Console.WriteLine("Type 'exit' to quit this application at any time.\n");
         }
     }
     #endregion

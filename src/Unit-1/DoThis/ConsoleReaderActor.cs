@@ -10,30 +10,44 @@ namespace WinTail
     class ConsoleReaderActor : UntypedActor
     {
         public const string ExitCommand = "exit";
-        private IActorRef _consoleWriterActor;
-
-        public ConsoleReaderActor(IActorRef consoleWriterActor)
-        {
-            _consoleWriterActor = consoleWriterActor;
-        }
+        public const string StartCommand = "start";//<<-- 1.2
 
         protected override void OnReceive(object message)
         {
-            var read = Console.ReadLine();
-            if (!string.IsNullOrEmpty(read) && String.Equals(read, ExitCommand, StringComparison.OrdinalIgnoreCase))
+            //<<-- 1.2
+            if(message.Equals(StartCommand))
             {
-                // shut down the system (acquire handle to system via
-                // this actors context)
+                DoPrintInstructions();
+            }
+
+            GetAndValidateInput();
+        }
+        
+        #region Internal Methods
+        private void DoPrintInstructions()//<<-- 1.2
+        {
+            Console.WriteLine("Please provide the URI of a log file on disk.\n");
+        } 
+
+        /// <summary>
+        /// Reads input from console, validates it (via the validation actor), 
+        /// then signals appropriate response (continue processing, error, success, etc.).
+        /// </summary>
+        private void GetAndValidateInput()
+        {
+            var message = Console.ReadLine();
+
+            if(!string.IsNullOrEmpty(message) && String.Equals(message, ExitCommand, StringComparison.OrdinalIgnoreCase))
+            {
+                // if user typed ExitCommand, shut down the entire actor system (allows the process to exit.)
                 Context.System.Terminate();
                 return;
             }
 
-            // send input to the console writer to process and print
-            // YOU NEED TO FILL IN HERE
-
-            // continue reading messages from the console
-            // YOU NEED TO FILL IN HERE
+            //otherwise, just hand the message off for validation
+            // We are using ActorSelection so we no longer have coupling between this object, and the fileValidationActor object.
+            Context.ActorSelection("akka://MyActorSystem/user/validationActor").Tell(message);
         }
-
+        #endregion
     }
 }
